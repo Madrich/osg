@@ -680,7 +680,8 @@ GLExtensions::GLExtensions(unsigned int contextID)
     isPBOSupported = OSG_GL3_FEATURES || osg::isGLExtensionSupported(contextID,"GL_ARB_pixel_buffer_object");
     isUniformBufferObjectSupported = osg::isGLExtensionSupported(contextID, "GL_ARB_uniform_buffer_object");
     isTBOSupported = osg::isGLExtensionSupported(contextID,"GL_ARB_texture_buffer_object");
-
+    isVAOSupported = osg::isGLExtensionSupported(contextID, "GL_ARB_vertex_array_object");
+    isTransformFeedbackSupported = osg::isGLExtensionSupported(contextID, "GL_ARB_transform_feedback2");
 
     // BlendFunc extensions
     isBlendFuncSeparateSupported = OSG_GLES2_FEATURES || OSG_GL3_FEATURES ||
@@ -1065,6 +1066,12 @@ GLExtensions::GLExtensions(unsigned int contextID)
     osg::setGLExtensionFuncPtr(glGetTransformFeedbacki_v, "glGetTransformFeedbacki_v");
     osg::setGLExtensionFuncPtr(glGetTransformFeedbacki64_v, "glGetTransformFeedbacki64_v");
 
+    //Vertex Array Object
+    osg::setGLExtensionFuncPtr(glGenVertexArrays,"glGenVertexArrays");
+    osg::setGLExtensionFuncPtr(glBindVertexArray,"glBindVertexArray");
+    osg::setGLExtensionFuncPtr(glDeleteVertexArrays,"glDeleteVertexArrays");
+    osg::setGLExtensionFuncPtr(glIsVertexArray,"glIsVertexArray");
+    
 }
 
 
