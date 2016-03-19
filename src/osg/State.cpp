@@ -17,8 +17,10 @@
 #include <osg/GLExtensions>
 #include <osg/Drawable>
 #include <osg/ApplicationUsage>
+#include <osg/ContextData>
 
 #include <sstream>
+#include <algorithm>
 
 #ifndef GL_MAX_TEXTURE_COORDS
 #define GL_MAX_TEXTURE_COORDS 0x8871
@@ -77,6 +79,10 @@ State::State():
     if (str && (strcmp(str,"ONCE_PER_ATTRIBUTE")==0 || strcmp(str,"ON")==0 || strcmp(str,"on")==0))
     {
         _checkGLErrors = ONCE_PER_ATTRIBUTE;
+    }
+    else if(str && (strcmp(str, "OFF") == 0 || strcmp(str, "off") == 0))
+    {
+        _checkGLErrors = NEVER_CHECK_GL_ERRORS;
     }
 
     _currentActiveTextureUnit=0;
@@ -277,7 +283,7 @@ void State::reset()
     _lastAppliedProgramObject = 0;
 
     // what about uniforms??? need to clear them too...
-    // go through all active Unfirom's, setting to change to force update,
+    // go through all active Uniform's, setting to change to force update,
     // the idea is to leave only the global defaults left.
     for(UniformMap::iterator uitr=_uniformMap.begin();
         uitr!=_uniformMap.end();
@@ -300,14 +306,14 @@ void State::setInitialViewMatrix(const osg::RefMatrix* matrix)
 void State::setMaxTexturePoolSize(unsigned int size)
 {
     _maxTexturePoolSize = size;
-    osg::Texture::getTextureObjectManager(getContextID())->setMaxTexturePoolSize(size);
+    osg::get<TextureObjectManager>(_contextID)->setMaxTexturePoolSize(size);
     OSG_INFO<<"osg::State::_maxTexturePoolSize="<<_maxTexturePoolSize<<std::endl;
 }
 
 void State::setMaxBufferObjectPoolSize(unsigned int size)
 {
     _maxBufferObjectPoolSize = size;
-    osg::GLBufferObjectManager::getGLBufferObjectManager(getContextID())->setMaxGLBufferObjectPoolSize(_maxBufferObjectPoolSize);
+    osg::get<GLBufferObjectManager>(_contextID)->setMaxGLBufferObjectPoolSize(_maxBufferObjectPoolSize);
     OSG_INFO<<"osg::State::_maxBufferObjectPoolSize="<<_maxBufferObjectPoolSize<<std::endl;
 }
 
@@ -945,7 +951,7 @@ void State::setInterleavedArrays( GLenum format, GLsizei stride, const GLvoid* p
     OSG_NOTICE<<"Warning: State::setInterleavedArrays(..) not implemented."<<std::endl;
 #endif
 
-    // the crude way, assume that all arrays have been effected so dirty them and
+    // the crude way, assume that all arrays have been affected so dirty them and
     // disable them...
     dirtyAllVertexArrays();
 }
@@ -953,6 +959,17 @@ void State::setInterleavedArrays( GLenum format, GLsizei stride, const GLvoid* p
 void State::initializeExtensionProcs()
 {
     if (_extensionProcsInitialized) return;
+
+    const char* vendor = (const char*) glGetString( GL_VENDOR );
+    if (vendor)
+    {
+        std::string str_vendor(vendor);
+        std::replace(str_vendor.begin(), str_vendor.end(), ' ', '_');
+        OSG_INFO<<"GL_VENDOR = ["<<str_vendor<<"]"<<std::endl;
+        _defineMap.map[str_vendor].defineVec.push_back(osg::StateSet::DefinePair("1",osg::StateAttribute::ON));
+        _defineMap.map[str_vendor].changed = true;
+        _defineMap.changed = true;
+    }
 
     _glExtensions = new GLExtensions(_contextID);
     GLExtensions::Set(_contextID, _glExtensions.get());
@@ -1447,6 +1464,18 @@ bool State::convertVertexShaderSourceToOsgBuiltIns(std::string& source) const
         declPos = 0;
     }
 
+    if (_useModelViewAndProjectionUniforms)
+    {
+        // replace ftransform as it only works with built-ins
+        State_Utils::replace(source, "ftransform()", "gl_ModelViewProjectionMatrix * gl_Vertex");
+
+        // replace built in uniform
+        State_Utils::replaceAndInsertDeclaration(source, declPos, "gl_ModelViewMatrix", "osg_ModelViewMatrix", "uniform mat4 ");
+        State_Utils::replaceAndInsertDeclaration(source, declPos, "gl_ModelViewProjectionMatrix", "osg_ModelViewProjectionMatrix", "uniform mat4 ");
+        State_Utils::replaceAndInsertDeclaration(source, declPos, "gl_ProjectionMatrix", "osg_ProjectionMatrix", "uniform mat4 ");
+        State_Utils::replaceAndInsertDeclaration(source, declPos, "gl_NormalMatrix", "osg_NormalMatrix", "uniform mat3 ");
+    }
+
     if (_useVertexAttributeAliasing)
     {
         State_Utils::replaceAndInsertDeclaration(source, declPos, _vertexAlias._glName,         _vertexAlias._osgName,         _vertexAlias._declaration);
@@ -1459,18 +1488,6 @@ bool State::convertVertexShaderSourceToOsgBuiltIns(std::string& source) const
             const VertexAttribAlias& texCoordAlias = _texCoordAliasList[i];
             State_Utils::replaceAndInsertDeclaration(source, declPos, texCoordAlias._glName, texCoordAlias._osgName, texCoordAlias._declaration);
         }
-    }
-
-    if (_useModelViewAndProjectionUniforms)
-    {
-        // replace ftransform as it only works with built-ins
-        State_Utils::replace(source, "ftransform()", "gl_ModelViewProjectionMatrix * gl_Vertex");
-
-        // replace built in uniform
-        State_Utils::replaceAndInsertDeclaration(source, declPos, "gl_ModelViewMatrix", "osg_ModelViewMatrix", "uniform mat4 ");
-        State_Utils::replaceAndInsertDeclaration(source, declPos, "gl_ModelViewProjectionMatrix", "osg_ModelViewProjectionMatrix", "uniform mat4 ");
-        State_Utils::replaceAndInsertDeclaration(source, declPos, "gl_ProjectionMatrix", "osg_ProjectionMatrix", "uniform mat4 ");
-        State_Utils::replaceAndInsertDeclaration(source, declPos, "gl_NormalMatrix", "osg_NormalMatrix", "uniform mat3 ");
     }
 
     OSG_INFO<<"-------- Converted source "<<std::endl<<source<<std::endl<<"----------------"<<std::endl;
@@ -1847,16 +1864,16 @@ std::string State::getDefineString(const osg::ShaderDefines& shaderDefines)
             const StateSet::DefinePair& dp = cd_itr->second;
             shaderDefineStr += "#define ";
             shaderDefineStr += cd_itr->first;
-            if (dp.first.empty())
-            {
-                shaderDefineStr += "\n";
-            }
-            else
+            if (!dp.first.empty())
             {
                 shaderDefineStr += " ";
                 shaderDefineStr += dp.first;
-                shaderDefineStr += "\n";
             }
+#ifdef WIN32
+            shaderDefineStr += "\r\n";
+#else
+            shaderDefineStr += "\n";
+#endif
 
             ++sd_itr;
             ++cd_itr;

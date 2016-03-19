@@ -31,7 +31,7 @@
 #include <iostream>
 
 //
-// A simple demo demonstrating use osg::Texture3D to create a blended animation between four seperate images packed together into a 3d texture
+// A simple demo demonstrating use osg::Texture3D to create a blended animation between four separate images packed together into a 3d texture
 //
 
 typedef std::vector< osg::ref_ptr<osg::Image> > ImageList;
@@ -39,10 +39,10 @@ typedef std::vector< osg::ref_ptr<osg::Image> > ImageList;
 osg::StateSet* createState()
 {
     // read 4 2d images
-    osg::ref_ptr<osg::Image> image_0 = osgDB::readImageFile("Images/lz.rgb");
-    osg::ref_ptr<osg::Image> image_1 = osgDB::readImageFile("Images/reflect.rgb");
-    osg::ref_ptr<osg::Image> image_2 = osgDB::readImageFile("Images/tank.rgb");
-    osg::ref_ptr<osg::Image> image_3 = osgDB::readImageFile("Images/skymap.jpg");
+    osg::ref_ptr<osg::Image> image_0 = osgDB::readRefImageFile("Images/lz.rgb");
+    osg::ref_ptr<osg::Image> image_1 = osgDB::readRefImageFile("Images/reflect.rgb");
+    osg::ref_ptr<osg::Image> image_2 = osgDB::readRefImageFile("Images/tank.rgb");
+    osg::ref_ptr<osg::Image> image_3 = osgDB::readRefImageFile("Images/skymap.jpg");
 
     if (!image_0 || !image_1 || !image_2 || !image_3)
     {
@@ -132,13 +132,13 @@ class UpdateStateCallback : public osg::NodeCallback
             osg::StateSet* stateset = node->getStateSet();
             if (stateset)
             {
-                // we have an exisitng stateset, so lets animate it.
+                // we have an existing stateset, so lets animate it.
                 animateState(stateset);
             }
 
-            // note, callback is repsonsible for scenegraph traversal so
+            // note, callback is responsible for scenegraph traversal so
             // should always include call the traverse(node,nv) to ensure
-            // that the rest of cullbacks and the scene graph are traversed.
+            // that the rest of callbacks and the scene graph are traversed.
             traverse(node,nv);
         }
 };

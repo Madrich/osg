@@ -123,29 +123,8 @@ public:
             OSG_NOTICE<<"   WindowWidth="<<ea.getWindowWidth()<<std::endl;
             OSG_NOTICE<<"   WindowHeight="<<ea.getWindowHeight()<<std::endl;
 
-            // reset the Camera and associated Texture's to make sure it tracks the new window size.
-            int width = ea.getWindowWidth();
-            int height = ea.getWindowHeight();
-            camera->setViewport(0, 0, width, height);
-            camera->setRenderingCache(0);
-
-            osg::Camera::BufferAttachmentMap& cbam = camera->getBufferAttachmentMap();
-            for(osg::Camera::BufferAttachmentMap::iterator itr = cbam.begin();
-                itr != cbam.end();
-                ++itr)
-            {
-                osg::Camera::Attachment& attachment = itr->second;
-                if (attachment._texture.get())
-                {
-                    osg::Texture2D* texture2D = dynamic_cast<osg::Texture2D*>(attachment._texture.get());
-                    if (texture2D)
-                    {
-                        OSG_NOTICE<<"Resetting Texture size"<<std::endl;
-                        texture2D->setTextureSize(width, height);
-                        texture2D->dirtyTextureObject();
-                    }
-                }
-            }
+            // reset the Camera viewport and associated Texture's to make sure it tracks the new window size.
+            camera->resize(ea.getWindowWidth(), ea.getWindowHeight());
         }
         return false;
     }
@@ -724,10 +703,10 @@ int main(int argc, char** argv)
     osgViewer::Viewer viewer(arguments);
 
     // load the nodes from the commandline arguments.
-    osg::Node* loadedModel = osgDB::readNodeFiles(arguments);
+    osg::ref_ptr<osg::Node> loadedModel = osgDB::readRefNodeFiles(arguments);
 
     // if not loaded assume no arguments passed in, try use default mode instead.
-    if (!loadedModel) loadedModel = osgDB::readNodeFile("cow.osgt");
+    if (!loadedModel) loadedModel = osgDB::readRefNodeFile("cow.osgt");
 
     if (!loadedModel)
     {
@@ -752,7 +731,7 @@ int main(int argc, char** argv)
     }
     else
     {
-        osg::Node* distortionNode = createDistortionSubgraph( options, loadedModel, viewer.getCamera()->getClearColor());
+        osg::Node* distortionNode = createDistortionSubgraph( options, loadedModel.get(), viewer.getCamera()->getClearColor());
         viewer.setSceneData( distortionNode );
     }
 

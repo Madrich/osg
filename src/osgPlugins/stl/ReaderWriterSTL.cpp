@@ -25,6 +25,7 @@
 
 #include <osg/Notify>
 #include <osg/Endian>
+#include <osg/Types>
 
 #include <osgDB/Registry>
 #include <osgDB/ReadFile>
@@ -43,8 +44,6 @@
 #include <sys/stat.h>
 
 #include <string.h>
-#include <stdint.h>
-
 #include <memory>
 
 struct STLOptionsStruct {

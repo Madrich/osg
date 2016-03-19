@@ -1,4 +1,4 @@
-/* OpenSceneGraph example, osganimate.
+/* OpenSceneGraph example, oldshadercomposition.
 *
 *  Permission is hereby granted, free of charge, to any person obtaining a copy
 *  of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
 
 osg::Node* createOldShaderCompositionScene(osg::ArgumentParser& arguments)
 {
-    osg::Node* node = osgDB::readNodeFiles(arguments);
+    osg::ref_ptr<osg::Node> node = osgDB::readRefNodeFiles(arguments);
     if (!node) return 0;
 
     osg::Group* group = new osg::Group;

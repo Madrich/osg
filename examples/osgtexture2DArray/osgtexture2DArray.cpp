@@ -39,13 +39,21 @@
 
 typedef std::vector< osg::ref_ptr<osg::Image> > ImageList;
 
+class SubloadCallback : public osg::Texture2DArray::SubloadCallback
+{
+  public:
+    virtual void load(const osg::Texture2DArray& texture, osg::State& state) const   { }
+    virtual void subload(const osg::Texture2DArray& texture, osg::State& state) const   { }
+};
+
+
 osg::StateSet* createState(osg::ArgumentParser& arguments)
 {
     // read 4 2d images
-    osg::ref_ptr<osg::Image> image_0 = osgDB::readImageFile("Images/lz.rgb");
-    osg::ref_ptr<osg::Image> image_1 = osgDB::readImageFile("Images/reflect.rgb");
-    osg::ref_ptr<osg::Image> image_2 = osgDB::readImageFile("Images/tank.rgb");
-    osg::ref_ptr<osg::Image> image_3 = osgDB::readImageFile("Images/skymap.jpg");
+    osg::ref_ptr<osg::Image> image_0 = osgDB::readRefImageFile("Images/lz.rgb");
+    osg::ref_ptr<osg::Image> image_1 = osgDB::readRefImageFile("Images/reflect.rgb");
+    osg::ref_ptr<osg::Image> image_2 = osgDB::readRefImageFile("Images/tank.rgb");
+    osg::ref_ptr<osg::Image> image_3 = osgDB::readRefImageFile("Images/skymap.jpg");
 
     if (!image_0 || !image_1 || !image_2 || !image_3)
     {
@@ -80,7 +88,12 @@ osg::StateSet* createState(osg::ArgumentParser& arguments)
         texture->setFilter(osg::Texture2DArray::MIN_FILTER, osg::Texture2DArray::LINEAR_MIPMAP_LINEAR);
     }
 
-    if (arguments.read("--packed"))
+    if (arguments.read("--subload"))
+    {
+        texture->setTextureSize(textureSize, textureSize, 1);
+        texture->setSubloadCallback(new SubloadCallback());
+    }
+    else if (arguments.read("--packed"))
     {
         OSG_NOTICE<<"Packing all images into a single osg::Image to pass to Texture2DArray."<<std::endl;
 
@@ -99,14 +112,13 @@ osg::StateSet* createState(osg::ArgumentParser& arguments)
     }
     else
     {
-        OSG_NOTICE<<"Assigned all images to Texture2DArray seperately."<<std::endl;
+        OSG_NOTICE<<"Assigned all images to Texture2DArray separately."<<std::endl;
 
         texture->setImage(0, image_0.get());
         texture->setImage(1, image_1.get());
         texture->setImage(2, image_2.get());
         texture->setImage(3, image_3.get());
     }
-
 
     std::string vsFileName("shaders/osgtexture2DArray.vert");
     std::string fsFileName("shaders/osgtexture2DArray.frag");
@@ -116,10 +128,10 @@ osg::StateSet* createState(osg::ArgumentParser& arguments)
 
     osg::ref_ptr<osg::Program> program = new osg::Program;
 
-    osg::ref_ptr<osg::Shader> vertexShader = osgDB::readShaderFile( osg::Shader::VERTEX, vsFileName) ;
+    osg::ref_ptr<osg::Shader> vertexShader = osgDB::readRefShaderFile( osg::Shader::VERTEX, vsFileName) ;
     if (vertexShader.get()) program->addShader( vertexShader.get() );
 
-    osg::ref_ptr<osg::Shader> fragmentShader = osgDB::readShaderFile( osg::Shader::FRAGMENT, fsFileName) ;
+    osg::ref_ptr<osg::Shader> fragmentShader = osgDB::readRefShaderFile( osg::Shader::FRAGMENT, fsFileName) ;
     if (fragmentShader.get()) program->addShader( fragmentShader.get() );
 
     // create the StateSet to store the texture data

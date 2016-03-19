@@ -260,7 +260,8 @@ const char* invalidNames[] =
     "PushStackValueVisitor",
     "RayIntersector",
     "OpenSceneGraph-Data",
-    "Node"
+    "Node",
+    "AlphaFunc"
 };
 
 
@@ -353,6 +354,7 @@ TypoCorrection typoCorrections[] =
     {"Krulthof",       "Kruithof"},
     {"Lagrade",        "Lagarde"},
     {"Largade",        "Lagarde"},
+    {"Largarde",       "Lagarde"},
     {"Larshkari",      "Lashkari"},
     {"Lashakari",      "Lashkari"},
     {"Lashari",        "Lashkari"},
@@ -478,8 +480,11 @@ TypoCorrection typoCorrections[] =
     {"GjÃ¸l","Gjøl"},
     {"RavÅ¡elj","Rav¨elj"},
     {"Ravsel",  "Rav¨elj"},
-    {"Ravselj", "Rav¨elj"}
-
+    {"Ravselj", "Rav¨elj"},
+    {"Janik", "Jannik"},
+    {"ViganÃ²", "Viganò"},
+    {"Vigano", "Viganò"},
+    {"Frashud", "Farshid"}
 };
 
 
@@ -660,7 +665,15 @@ NameCorrection nameCorrections[] =
      {"Bradley",       "Baker",
       "Bradley",       "Baker Searles"},
      {"PawelKsiezopolski", "",
-      "Pawel",          "Ksiezopolski"}
+      "Pawel",          "Ksiezopolski"},
+     {"Albert", "Luaces",
+      "Alberto","Luaces"},
+     {"KOS", "",
+      "Konstantin","Matveyev"},
+     {"WeSee", "",
+       "Alois", "Wismer"},
+     {"We", "See",
+       "Alois", "Wismer"}
 };
 
 
